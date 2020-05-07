@@ -8,6 +8,7 @@ from unittest.signals import (
 import warnings
 
 from green.exceptions import InitializerOrFinalizerError
+from green.helper import check_kubefwd_running
 from green.loader import toParallelTargets
 from green.output import debug, GreenStream
 from green.process import LoggingDaemonlessPool, poolRunner
@@ -55,6 +56,12 @@ def run(suite, stream, args, testing=False):
 
     Any args.stream passed in will be wrapped in a GreenStream
     """
+
+    # check if the kubefwd is running, then stop the run
+    if check_kubefwd_running():
+        return GreenTestResult(args, stream)
+
+
     if not issubclass(GreenStream, type(stream)):
         stream = GreenStream(stream, disable_windows=args.disable_windows,
                 disable_unidecode=args.disable_unidecode)
