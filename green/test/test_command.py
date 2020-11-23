@@ -20,7 +20,6 @@ from green.config import StoreOpt
 
 
 class TestCommand(unittest.TestCase):
-
     @contextlib.contextmanager
     def environ(self, setup_cfg=None, *args, **variables):
 
@@ -140,5 +139,8 @@ class TestCommand(unittest.TestCase):
         cmd.run()
 
         d.fetch_build_eggs.assert_has_calls(
-            [call(["six"]), call(["mock", "unittest2"]),]
+            [
+                call(["six"]),
+                call(["mock", "unittest2"]),
+            ]
         )

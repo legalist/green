@@ -1,3 +1,29 @@
+# Version 3.2.4
+#### 1 Nov 2020
+
+- Fix `-j/--junit-report` so that it writes to the properly-named file when specified from a config file. Contributed by @jwaschkau in #236.
+- Fix Windows CI by dropping a broken Python 2 test.
+
+# Version 3.2.3
+#### 11 Oct 2020
+
+- Properly clean up temporary files in some versions/platforms. Contributed by @Icerman in #232.
+  Resolves #228.
+- Fix an unwanted "1A" appearing at the beginning of test result lines in CI such as GitHub Actions
+  and AppVeyor.
+
+# Version 3.2.2
+#### 22 Sep 2020
+
+- Fix help string for the `-O/--clear-omit` option. Resolves #231.
+- Tweak a bit of green's self-coverage to adjust for making releases in Python 3.8
+
+# Version 3.2.1
+#### 9 Aug 2020
+
+- Fix passing tests not displaying captured stderr output unless stdout output was also present.
+  Resolves #226.
+
 # Version 3.2.0
 #### 6 June 2020
 

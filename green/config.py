@@ -49,7 +49,7 @@ default_args = argparse.Namespace(  # pragma: no cover
     config=None,  # Not in configs
     file_pattern="test*.py",
     test_pattern="*",
-    junit_report=False,
+    junit_report="",
     run_coverage=False,
     cov_config_file=True,  # A string with a special boolean default
     quiet_coverage=False,
@@ -458,9 +458,9 @@ def parseArguments(argv=None):  # pragma: no cover
                 "files to omit from coverage reports.  If the default list "
                 "catches files that you DO want to cover you can specify this "
                 "flag to leave the default list empty to start with.  You can "
-                "then add patterns back in with --omit-add. The default list is "
-                "something like '*/test*,*/mock*,*(temp dir)*,*(python system "
-                "packages)*' -- only longer."
+                "then add patterns back in with --omit-patterns. The default "
+                "list is something like '*/test*,*/mock*,*(temp dir)*,*(python "
+                "system packages)*' -- only longer."
             ),
             default=argparse.SUPPRESS,
         )
@@ -684,7 +684,6 @@ def mergeConfig(args, testing=False):  # pragma: no cover
             "no_tracebacks",
             "disable_windows",
             "quiet_coverage",
-            "junit_report",
         ]:
             config_getter = config.getboolean
         elif name in ["processes", "debug", "verbose", "minimum_coverage"]:
@@ -698,6 +697,7 @@ def mergeConfig(args, testing=False):  # pragma: no cover
             "omit_patterns",
             "warnings",
             "test_pattern",
+            "junit_report",
         ]:
             config_getter = config.get
         elif name in ["targets", "help", "config"]:
