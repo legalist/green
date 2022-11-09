@@ -37,7 +37,7 @@ class GreenTestLoader(unittest.TestLoader):
         test_case_names = list(filter(filter_test_methods, dir(testCaseClass)))
         debug("Test case names: {}".format(test_case_names))
 
-        # Use default unittest.TestSuite sorting method if not overriden
+        # Use default unittest.TestSuite sorting method if not overridden
         test_case_names.sort(key=functools.cmp_to_key(self.sortTestMethodsUsing))
 
         if not test_case_names and hasattr(testCaseClass, "runTest"):
@@ -191,7 +191,6 @@ class GreenTestLoader(unittest.TestLoader):
         return flattenTestSuite(suites) if suites else None
 
     def loadTarget(self, target, file_pattern="test*.py"):
-        """"""
         debug(
             "Attempting to load target '{}' with file_pattern '{}'".format(
                 target, file_pattern
@@ -247,7 +246,7 @@ class GreenTestLoader(unittest.TestLoader):
                         del tests._tests[index]
 
             except Exception as e:
-                debug("IGNORED exception: {}".format(e))
+                raise Exception("Exception while loading {}: {}".format(target, e))
             if tests and tests.countTestCases():
                 debug("Load method: DOTTED OBJECT - {}".format(target))
                 return flattenTestSuite(tests)
@@ -480,7 +479,7 @@ def flattenTestSuite(test_suite, module=None):
         suite.injected_module = module.__name__
         suites.append(suite)
 
-    # Now extract all tests from the suite heirarchies and flatten them into a
+    # Now extract all tests from the suite hierarchies and flatten them into a
     # single suite with all tests.
     tests = []
     for suite in suites:

@@ -1,3 +1,45 @@
+# Unreleased
+#### Date TBD
+
+# Version 3.4.3
+#### 20 Sep 2022
+
+- If green creates a temp directory for tests, but is unable to clean it up, emit a warning instead of crashing. Some tests don't behave well in the temp directory. Resolves #264.
+
+# Version 3.4.2
+#### 23 May 2022
+
+- Added `*/dist-packages*` to the default
+- The development script, `./g`, now defaults to looking for `python3`
+
+# Version 3.4.1
+#### 20 January 2021
+
+- Fixed a situation where syntax errors in a test file were being silently ignored, resulting in the entire test file being omitted from the test. This would happen if the module with a syntax error was loaded via specifying a "dot name" such as `mymodule.MyClass.mytest` as the target to test. Now green reliably crashes in this situation. Note that this changes the behavior for syntax errors when initiated with a filename target. Previously specifying the test target as a filename such as `mymodule.py` that had a syntax error in it would result in converting the loading exception into a single test failure representing the inability to load a test file. Now, we simply crash on the syntax error. In practice, I believe this is an improvement...as syntax errors are easy to fix, and folks are used to hitting the crash and fixing them, while obscuring them behind a custom test failure is not only unusual, it's also a lot of work to make it happen inside green.
+
+# Version 3.4.0
+#### 12 January 2021
+
+- Four levels of verbosity (`-vvvv` on the command line or `verbose=4` in the config) now displays the test method name _and_ the test method docstring. Resolves #252.
+
+# Version 3.3.0
+#### 15 July 2021
+
+- Added `-X NUM, --maxtasksperchild NUM` to force worker processes to exit and respawn after a certain number of tasks so that we could use it in integration tests to force the condition fixed below. A "task" is typically the suite of tests from a single file.
+- Fixed processes failing to respawn on Python 3.8+. In the happy path, processes never die, so there is no problem. In the sad path, if all processes got killed before all test suites had been run then Green would hang forever with a queue of tests to run without any worker processes to run them. Resolves #250.
+
+# Version 3.2.6
+#### 25 April 2021
+
+- Color is now properly emitted on Windows runners in GitHub Actions. See #245.
+- Unexpected successes now count as failures like they do in unittest. Resolves #241.
+- Fix internal coverage not reporting in CI + other internal CI improvements
+
+# Version 3.2.5
+#### 23 Nov 2020
+
+- Fix failing/erroring SubTests not properly reporting output to stdout/stderr. Resolves #238.
+
 # Version 3.2.4
 #### 1 Nov 2020
 
@@ -55,7 +97,7 @@
 
 - Fixed a hang that sometimes occurs in Python 3.8.0-3.8.2 due to a bug in upstream Python
   - Upstream bug report: https://bugs.python.org/issue39360
-  - Upstream fix in master: https://github.com/python/cpython/pull/19009
+  - Upstream fix in main: https://github.com/python/cpython/pull/19009
   - Upstream fix in 3.8 branch (Maybe gets included in 3.8.3?): https://github.com/python/cpython/pull/19023
 - Fixed behavior of raising SkipTest in a setUpClass class method on Python >= 3.8
 
@@ -276,7 +318,7 @@
 #### 26 April 2017
 
 - Added a page about the Udemy course
-  [Python Testing with Green](https://github.com/CleanCut/green/blob/master/PythonTestingWithGreen.md),
+  [Python Testing with Green](https://github.com/CleanCut/green/blob/main/PythonTestingWithGreen.md),
   with lots of nice coupons and discount codes just for finding the Github
   page.  Check it out!
 

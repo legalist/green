@@ -126,20 +126,27 @@ class ProtoTest:
         )
 
     def getDescription(self, verbose):
+        # Classes or module teardown errors
         if self.is_class_or_module_teardown_error:
             return self.name
-        if verbose == 2:
-            if self.is_doctest:
+        # Doctests
+        if self.is_doctest:
+            if verbose == 2:
                 return self.name
-            return self.method_name + self.subtest_part
-        elif verbose > 2:
-            if self.is_doctest:
+            elif verbose > 2:
                 return self.name + " -> " + self.filename + ":" + str(self.lineno)
-            return (self.docstr_part + self.subtest_part) or (
-                self.method_name + self.subtest_part
-            )
-        else:
             return ""
+        # Regular tests
+        if verbose == 2:
+            return self.method_name + self.subtest_part
+        elif verbose == 3:
+            return (self.docstr_part + self.subtest_part) or self.method_name
+        elif verbose > 3:
+            if self.docstr_part + self.subtest_part:
+                return self.method_name + ": " + self.docstr_part + self.subtest_part
+            else:
+                return self.method_name
+        return ""
 
 
 class ProtoError:
@@ -349,7 +356,7 @@ class ProtoTestResult(BaseTestResult):
 
     def addExpectedFailure(self, test, err):
         """
-        Called when a test fails, and we expeced the failure
+        Called when a test fails, and we expected the failure
         """
         self.expectedFailures.append((proto_test(test), proto_error(err)))
 
@@ -363,7 +370,7 @@ class ProtoTestResult(BaseTestResult):
         """
         Called at the end of a subtest no matter its result.
 
-        The test that runs the subtests is calls the other test methods to
+        The test that runs the subtests calls the other test methods to
         record its own result.  We use this method to record each subtest as a
         separate test result.  It's very meta.
         """
@@ -429,22 +436,34 @@ class GreenTestResult(BaseTestResult):
     def stop(self):
         self.shouldStop = True
 
-    def tryRecordingStdoutStderr(self, test, proto_test_result):
+    def tryRecordingStdoutStderr(self, test, proto_test_result, err=None):
         if proto_test_result.stdout_output.get(test, False):
             self.recordStdout(test, proto_test_result.stdout_output[test])
         if proto_test_result.stderr_errput.get(test, False):
             self.recordStderr(test, proto_test_result.stderr_errput[test])
 
+        # SubTest errors/failures (but not successes) generate a different err object, so we have to
+        # do some inspection to figure out which object has the output/errput
+        if (test.class_name == "SubTest") and err:
+            for t in proto_test_result.stdout_output.keys():
+                if test.dotted_name.startswith(t.dotted_name):
+                    self.recordStdout(test, proto_test_result.stdout_output[t])
+                    break
+            for t in proto_test_result.stderr_errput.keys():
+                if test.dotted_name.startswith(t.dotted_name):
+                    self.recordStderr(test, proto_test_result.stderr_errput[t])
+                    break
+
     def addProtoTestResult(self, proto_test_result):
         for test, err in proto_test_result.errors:
             self.addError(test, err, proto_test_result.test_time)
-            self.tryRecordingStdoutStderr(test, proto_test_result)
+            self.tryRecordingStdoutStderr(test, proto_test_result, err)
         for test, err in proto_test_result.expectedFailures:
             self.addExpectedFailure(test, err, proto_test_result.test_time)
-            self.tryRecordingStdoutStderr(test, proto_test_result)
+            self.tryRecordingStdoutStderr(test, proto_test_result, err)
         for test, err in proto_test_result.failures:
             self.addFailure(test, err, proto_test_result.test_time)
-            self.tryRecordingStdoutStderr(test, proto_test_result)
+            self.tryRecordingStdoutStderr(test, proto_test_result, err)
         for test in proto_test_result.passing:
             self.addSuccess(test, proto_test_result.test_time)
             self.tryRecordingStdoutStderr(test, proto_test_result)
@@ -532,7 +551,7 @@ class GreenTestResult(BaseTestResult):
             self.stream.writeln(self.colors.failing("No Tests Found"))
         else:
             grade = self.colors.passing("OK")
-            if self.errors or self.failures:
+            if not self.wasSuccessful():
                 grade = self.colors.failing("FAILED")
             self.stream.writeln("{} ({})".format(grade, ", ".join(stats)))
 
@@ -661,7 +680,7 @@ class GreenTestResult(BaseTestResult):
 
     def addExpectedFailure(self, test, err, test_time=None):
         """
-        Called when a test fails, and we expeced the failure
+        Called when a test fails, and we expected the failure
         """
         test = proto_test(test)
         if test_time:
@@ -779,4 +798,4 @@ class GreenTestResult(BaseTestResult):
         ):
             return False
         else:
-            return len(self.all_errors) == 0
+            return len(self.all_errors) + len(self.unexpectedSuccesses) == 0

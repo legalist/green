@@ -274,18 +274,20 @@ class TestProtoTest(unittest.TestCase):
         self.assertEqual(t.getDescription(1), "")
         self.assertEqual(t.getDescription(2), "test_stuff")
         self.assertEqual(t.getDescription(3), "apple")
-        self.assertEqual(t.getDescription(4), "apple")
+        self.assertEqual(t.getDescription(4), "test_stuff: apple")
+        self.assertEqual(t.getDescription(5), "test_stuff: apple")
 
         # Without a docstring
         class Vegetable(unittest.TestCase):
-            def test_stuff(self):
+            def test_vegetable(self):
                 pass
 
-        t = proto_test(Vegetable("test_stuff"))
+        t = proto_test(Vegetable("test_vegetable"))
         self.assertEqual(t.getDescription(1), "")
-        self.assertEqual(t.getDescription(2), "test_stuff")
-        self.assertEqual(t.getDescription(3), "test_stuff")
-        self.assertEqual(t.getDescription(4), "test_stuff")
+        self.assertEqual(t.getDescription(2), "test_vegetable")
+        self.assertEqual(t.getDescription(3), "test_vegetable")
+        self.assertEqual(t.getDescription(4), "test_vegetable")
+        self.assertEqual(t.getDescription(5), "test_vegetable")
 
     def test_newlineDocstring(self):
         """
@@ -336,10 +338,18 @@ class TestProtoTest(unittest.TestCase):
         dt = parser.get_doctest(test, {"f": f}, "doctest.name", "somefile.py", 20)
         dt.__module__ = "somefile"
         p = proto_test(doctest.DocTestCase(dt))
+        # no description
+        self.assertEqual(p.getDescription(0), "")
+        self.assertEqual(p.getDescription(1), "")
         # short description
         self.assertEqual(p.getDescription(2), "doctest.name")
         # long description
         description = p.getDescription(3)
+        self.assertIn("doctest.name", description)
+        self.assertIn("somefile.py", description)
+        self.assertIn("20", description)
+        # very long == long
+        description = p.getDescription(4)
         self.assertIn("doctest.name", description)
         self.assertIn("somefile.py", description)
         self.assertIn("20", description)
@@ -409,6 +419,39 @@ class TestGreenTestResult(unittest.TestCase):
         gtr.recordStdout.assert_called_with(test1, output)
         gtr.tryRecordingStdoutStderr(test2, ptr2)
         gtr.recordStderr.assert_called_with(test2, errput)
+
+    def test_tryRecordingStdoutStderr_SubTest(self):
+        """
+        Recording stdout and stderr works correctly for failed/errored SubTests.
+        """
+        gtr = GreenTestResult(self.args, GreenStream(self.stream))
+        gtr.recordStdout = MagicMock()
+        gtr.recordStderr = MagicMock()
+
+        output = "apple"
+        test1 = MagicMock()
+        test1.dotted_name = "test 1"
+        subtest1 = MagicMock()
+        subtest1.dotted_name = "test 1: the subtest"
+        subtest1.class_name = "SubTest"
+        ptr1 = MagicMock()
+        ptr1.stdout_output = {test1: output}
+        ptr1.stderr_errput = {}
+
+        errput = "banana"
+        test2 = MagicMock()
+        test2.dotted_name = "test 2"
+        subtest2 = MagicMock()
+        subtest2.dotted_name = "test 2: subtests are annoying"
+        subtest2.class_name = "SubTest"
+        ptr2 = MagicMock()
+        ptr2.stdout_output = {}
+        ptr2.stderr_errput = {test2: errput}
+
+        gtr.tryRecordingStdoutStderr(subtest1, ptr1, err=True)
+        gtr.recordStdout.assert_called_with(subtest1, output)
+        gtr.tryRecordingStdoutStderr(subtest2, ptr2, err=True)
+        gtr.recordStderr.assert_called_with(subtest2, errput)
 
     def test_failfastAddError(self):
         """
@@ -1023,7 +1066,7 @@ class TestGreenTestResultAdds(unittest.TestCase):
         self.args.verbose = 1
         gtr = GreenTestResult(self.args, GreenStream(self.stream))
         gtr.unexpectedSuccesses.append("anything")
-        self.assertEqual(gtr.wasSuccessful(), True)
+        self.assertEqual(gtr.wasSuccessful(), False)
 
     def test_wasSuccessful_coverageFails(self):
         """
