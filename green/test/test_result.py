@@ -1,5 +1,3 @@
-# encoding: utf-8
-from __future__ import unicode_literals
 import copy
 
 # `from doctest import DocTestCase` causes crashes, since the DocTestCase is
@@ -9,11 +7,11 @@ import copy
 import doctest
 from io import StringIO
 import sys
-import os
 import unittest
+from unittest.mock import MagicMock, patch
 import tempfile
 
-from green.config import default_args
+from green.config import get_default_args
 from green.output import Colors, GreenStream
 from green.result import (
     GreenTestResult,
@@ -24,21 +22,16 @@ from green.result import (
     BaseTestResult,
 )
 
-try:
-    from unittest.mock import MagicMock, patch
-except ImportError:
-    from mock import MagicMock, patch
-
 from coverage import coverage, CoverageException
 
 
-class MyProtoTest(ProtoTest, object):
+class MyProtoTest(ProtoTest):
     """
     For quickly making a ProtoTest
     """
 
     def __init__(self):
-        super(MyProtoTest, self).__init__()
+        super().__init__()
         self.module = "my_module"
         self.class_name = "MyClass"
         self.method_name = "myMethod"
@@ -51,7 +44,7 @@ class TestBaseTestResult(unittest.TestCase):
         """
         recordStdout records output.
         """
-        btr = BaseTestResult(None, None)
+        btr = BaseTestResult(None, colors=None)
         pt = ProtoTest()
         o = "some output"
         btr.recordStdout(pt, o)
@@ -61,7 +54,7 @@ class TestBaseTestResult(unittest.TestCase):
         """
         recordStdout ignores empty output sent to it
         """
-        btr = BaseTestResult(None, None)
+        btr = BaseTestResult(None, colors=None)
         pt = ProtoTest()
         btr.recordStdout(pt, "")
         self.assertEqual(btr.stdout_output, {})
@@ -72,7 +65,7 @@ class TestBaseTestResult(unittest.TestCase):
         """
         stream = StringIO()
         noise = "blah blah blah"
-        btr = BaseTestResult(stream, Colors(False))
+        btr = BaseTestResult(stream, colors=Colors(False))
         pt = ProtoTest()
         btr.stdout_output[pt] = noise
         btr.displayStdout(pt)
@@ -82,7 +75,7 @@ class TestBaseTestResult(unittest.TestCase):
         """
         recordStderr records errput.
         """
-        btr = BaseTestResult(None, None)
+        btr = BaseTestResult(None, colors=None)
         pt = ProtoTest()
         o = "some errput"
         btr.recordStderr(pt, o)
@@ -92,7 +85,7 @@ class TestBaseTestResult(unittest.TestCase):
         """
         recordStderr ignores empty errput sent to it
         """
-        btr = BaseTestResult(None, None)
+        btr = BaseTestResult(None, colors=None)
         pt = ProtoTest()
         btr.recordStderr(pt, "")
         self.assertEqual(btr.stderr_errput, {})
@@ -103,7 +96,7 @@ class TestBaseTestResult(unittest.TestCase):
         """
         stream = StringIO()
         noise = "blah blah blah"
-        btr = BaseTestResult(stream, Colors(False))
+        btr = BaseTestResult(stream, colors=Colors(False))
         pt = ProtoTest()
         btr.stderr_errput[pt] = noise
         btr.displayStderr(pt)
@@ -264,6 +257,7 @@ class TestProtoTest(unittest.TestCase):
         """
         getDescription() returns what we expect for all verbose levels
         """
+
         # With a docstring
         class Fruit(unittest.TestCase):
             def test_stuff(self):
@@ -370,7 +364,7 @@ class TestProtoTest(unittest.TestCase):
 
 class TestGreenTestResult(unittest.TestCase):
     def setUp(self):
-        self.args = copy.deepcopy(default_args)
+        self.args = copy.deepcopy(get_default_args())
         self.stream = StringIO()
 
     def tearDown(self):
@@ -840,7 +834,7 @@ class TestGreenTestResult(unittest.TestCase):
 class TestGreenTestResultAdds(unittest.TestCase):
     def setUp(self):
         self.stream = StringIO()
-        self.args = copy.deepcopy(default_args)
+        self.args = copy.deepcopy(get_default_args())
         self.args.verbose = 0
         self.gtr = GreenTestResult(self.args, GreenStream(self.stream))
         self.gtr._reportOutcome = MagicMock()
@@ -945,7 +939,7 @@ class TestGreenTestResultAdds(unittest.TestCase):
         test = proto_test(MagicMock())
         reason = "Twisted is odd"
         err = proto_error(err)
-        err.traceback_lines = ["UnsupportedTrialFeature: ('skip', '{}')".format(reason)]
+        err.traceback_lines = [f"UnsupportedTrialFeature: ('skip', '{reason}')"]
         self.gtr.addFailure(test, err)
         self.gtr._reportOutcome.assert_called_with(
             test, "s", self.gtr.colors.skipped, reason=reason
@@ -1090,7 +1084,7 @@ class TestGreenTestResultAdds(unittest.TestCase):
 
 class TestGreenTestRunCoverage(unittest.TestCase):
     def setUp(self):
-        self.args = copy.deepcopy(default_args)
+        self.args = copy.deepcopy(get_default_args())
 
         cov_file = tempfile.NamedTemporaryFile(delete=False)
         cov_file.close()

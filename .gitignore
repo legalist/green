@@ -18,6 +18,7 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+green-*/
 
 # Installer logs
 pip-log.txt
@@ -37,10 +38,12 @@ docs/_build/
 
 # Editor files
 tags
+.idea
 
-# virtualenvs
+# virtual environments
 venv*
 env*
+.python-version
 
 *.sublime-workspace
 

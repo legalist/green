@@ -1,8 +1,6 @@
-from __future__ import unicode_literals
 import unittest
 
 from green.version import __version__, pretty_version
-import green.version
 
 
 class TestVersion(unittest.TestCase):
@@ -10,7 +8,7 @@ class TestVersion(unittest.TestCase):
         """
         __version__ is a unicode string
         """
-        self.assertEqual(type(__version__), type(""))
+        self.assertEqual(type(__version__), str)
 
     def test_versionSet(self):
         """

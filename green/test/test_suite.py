@@ -1,20 +1,12 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-
 import copy
 from io import StringIO
 import os
 import tempfile
 from textwrap import dedent
 import unittest
+from unittest.mock import MagicMock
 
-
-try:
-    from unittest.mock import MagicMock
-except:
-    from mock import MagicMock
-
-from green.config import default_args
+from green.config import get_default_args
 from green.loader import GreenTestLoader
 from green.runner import run
 from green.suite import GreenTestSuite
@@ -31,6 +23,7 @@ class TestGreenTestSuite(unittest.TestCase):
         """
         Passing in default arguments causes attributes to be set.
         """
+        default_args = get_default_args()
         gts = GreenTestSuite(args=default_args)
         self.assertEqual(gts.allow_stdout, default_args.allow_stdout)
 
@@ -39,7 +32,7 @@ class TestGreenTestSuite(unittest.TestCase):
         When result.shouldStop == True, the suite should exit early.
         """
         mock_test = MagicMock()
-        gts = GreenTestSuite(args=default_args)
+        gts = GreenTestSuite(args=get_default_args())
         gts._tests = (mock_test,)
         mock_result = MagicMock()
         mock_result.shouldStop = True
@@ -51,7 +44,7 @@ class TestGreenTestSuite(unittest.TestCase):
         """
         mock_test = MagicMock()
         mock_test.__iter__.side_effect = TypeError
-        gts = GreenTestSuite(args=default_args)
+        gts = GreenTestSuite(args=get_default_args())
         gts._tests = (mock_test,)
         mock_result = MagicMock()
         mock_result._moduleSetUpFailed = True
@@ -65,7 +58,7 @@ class TestGreenTestSuite(unittest.TestCase):
         mock_module = MagicMock()
         mock_test = MagicMock()
         mock_err = MagicMock()
-        args = copy.deepcopy(default_args)
+        args = copy.deepcopy(get_default_args())
         gts = GreenTestSuite(args=args)
         gts._get_previous_module = mock_module
         mock_result = MagicMock()
@@ -83,7 +76,7 @@ class TestGreenTestSuite(unittest.TestCase):
         mock_test._testMethodName = "test_hello"
         mock_test2 = MagicMock()
         mock_test2._testMethodName = "test_goodbye"
-        args = copy.deepcopy(default_args)
+        args = copy.deepcopy(get_default_args())
         args.test_pattern = "_good*"
         gts = GreenTestSuite(args=args)
         gts.addTest(mock_test)
@@ -96,7 +89,7 @@ class TestGreenTestSuite(unittest.TestCase):
         The allow_stdout setting should not get ignored.
         """
 
-        class Object(object):
+        class Object:
             pass
 
         args = Object()
@@ -108,7 +101,7 @@ class TestGreenTestSuite(unittest.TestCase):
         """
         If SkipTest is raised in setUpClass, then the test gets skipped
         """
-        gts = GreenTestSuite(args=default_args)
+        gts = GreenTestSuite(args=get_default_args())
         mock_test = MagicMock()
         mock_result = MagicMock()
         mock_class = MagicMock()
@@ -137,7 +130,7 @@ class TestFunctional(unittest.TestCase):
         cls.startdir = None
 
     def setUp(self):
-        self.args = copy.deepcopy(default_args)
+        self.args = copy.deepcopy(get_default_args())
         self.stream = StringIO()
         self.tmpdir = tempfile.mkdtemp()
         self.loader = GreenTestLoader()
@@ -189,7 +182,7 @@ class TestModuleTeardown(unittest.TestCase):
         cls.startdir = None
 
     def setUp(self):
-        self.args = copy.deepcopy(default_args)
+        self.args = copy.deepcopy(get_default_args())
         self.stream = StringIO()
         self.tmpdir = tempfile.mkdtemp()
         self.loader = GreenTestLoader()

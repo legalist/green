@@ -1,8 +1,11 @@
-from __future__ import unicode_literals
-from __future__ import print_function
+"""Running tests."""
 
+from __future__ import annotations
+
+import argparse
 import multiprocessing
 from sys import modules
+from typing import TextIO, TYPE_CHECKING
 from unittest.signals import registerResult, installHandler, removeResult
 import warnings
 
@@ -11,7 +14,11 @@ from green.helper import check_kubefwd_running
 from green.loader import toParallelTargets
 from green.output import debug, GreenStream
 from green.process import LoggingDaemonlessPool, poolRunner
-from green.result import GreenTestResult
+from green.result import GreenTestResult, ProtoTestResult
+
+if TYPE_CHECKING:
+    from multiprocessing.managers import SyncManager
+    from queue import Queue
 
 
 class InitializerOrFinalizer:
@@ -23,11 +30,11 @@ class InitializerOrFinalizer:
     appropriate time.
     """
 
-    def __init__(self, dotted_function):
+    def __init__(self, dotted_function: str) -> None:
         self.module_part = ".".join(dotted_function.split(".")[:-1])
         self.function_part = ".".join(dotted_function.split(".")[-1:])
 
-    def __call__(self, *args):
+    def __call__(self, *args) -> None:
         if not self.module_part:
             return
         try:
@@ -37,7 +44,7 @@ class InitializerOrFinalizer:
             )
         except Exception as e:
             raise InitializerOrFinalizerError(
-                "Couldn't load '{}' - got: {}".format(self.function_part, str(e))
+                f"Couldn't load '{self.function_part}' - got: {str(e)}"
             )
         if not loaded_function:
             raise InitializerOrFinalizerError(
@@ -49,11 +56,13 @@ class InitializerOrFinalizer:
             loaded_function()
         except Exception as e:
             raise InitializerOrFinalizerError(
-                "Error running '{}' - got: {}".format(self.function_part, str(e))
+                f"Error running '{self.function_part}' - got: {str(e)}"
             )
 
 
-def run(suite, stream, args, testing=False):
+def run(
+    suite, stream: TextIO | GreenStream, args: argparse.Namespace, testing: bool = False
+) -> GreenTestResult:
     """
     Run the given test case or test suite with the specified arguments.
 
@@ -65,7 +74,7 @@ def run(suite, stream, args, testing=False):
         return GreenTestResult(args, stream)
 
 
-    if not issubclass(GreenStream, type(stream)):
+    if not isinstance(stream, GreenStream):
         stream = GreenStream(
             stream,
             disable_windows=args.disable_windows,
@@ -76,7 +85,8 @@ def run(suite, stream, args, testing=False):
     # Note: Catching SIGINT isn't supported by Python on windows (python
     # "WONTFIX" issue 18040)
     installHandler()
-    registerResult(result)
+    # Ignore the type mismatch until we make GreenTestResult a subclass of unittest.TestResult.
+    registerResult(result)  # type: ignore
 
     with warnings.catch_warnings():
         if args.warnings:  # pragma: no cover
@@ -91,7 +101,7 @@ def run(suite, stream, args, testing=False):
                 warnings.filterwarnings(
                     "module",
                     category=DeprecationWarning,
-                    message="Please use assert\w+ instead.",
+                    message=r"Please use assert\w+ instead.",
                 )
 
         result.startTestRun()
@@ -105,15 +115,17 @@ def run(suite, stream, args, testing=False):
             finalizer=InitializerOrFinalizer(args.finalizer),
             maxtasksperchild=args.maxtasksperchild,
         )
-        manager = multiprocessing.Manager()
-        targets = [(target, manager.Queue()) for target in parallel_targets]
+        manager: SyncManager = multiprocessing.Manager()
+        targets: list[tuple[str, Queue]] = [
+            (target, manager.Queue()) for target in parallel_targets
+        ]
         if targets:
             for index, (target, queue) in enumerate(targets):
                 if args.run_coverage:
                     coverage_number = index + 1
                 else:
                     coverage_number = None
-                debug("Sending {} to poolRunner {}".format(target, poolRunner))
+                debug(f"Sending {target} to poolRunner {poolRunner}")
                 pool.apply_async(
                     poolRunner,
                     (
@@ -136,12 +148,12 @@ def run(suite, stream, args, testing=False):
                         debug("runner.run(): received sentinal, breaking.", 3)
                         break
                     else:
-                        debug("runner.run(): start test: {}".format(msg))
+                        debug(f"runner.run(): start test: {msg}")
                         # Result guaranteed after this message, we're
                         # currently waiting on this test, so print out
                         # the white 'processing...' version of the output
                         result.startTest(msg)
-                        proto_test_result = queue.get()
+                        proto_test_result: ProtoTestResult = queue.get()
                         debug(
                             "runner.run(): received proto test result: {}".format(
                                 str(proto_test_result)
@@ -163,6 +175,7 @@ def run(suite, stream, args, testing=False):
 
         result.stopTestRun()
 
-    removeResult(result)
+    # Ignore the type mismatch untile we make GreenTestResult a subclass of unittest.TestResult.
+    removeResult(result)  # type: ignore
 
     return result

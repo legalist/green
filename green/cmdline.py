@@ -1,13 +1,18 @@
-from __future__ import unicode_literals
+"""The green command line entry point."""
+
+from __future__ import annotations
+
+
 import os
 import sys
 import tempfile
+from typing import Sequence
 
 # Importing from green (other than config) is done after coverage initialization
 import green.config as config
 
 
-def _main(argv, testing):
+def _main(argv: Sequence[str] | None, testing: bool) -> int:
     args = config.parseArguments(argv)
     args = config.mergeConfig(args, testing)
 
@@ -50,7 +55,8 @@ def _main(argv, testing):
 
     # Add debug logging for stuff that happened before this point here
     if config.files_loaded:
-        debug("Loaded config file(s): {}".format(", ".join(config.files_loaded)))
+        loaded_files = ", ".join(str(path) for path in config.files_loaded)
+        debug(f"Loaded config file(s): {loaded_files}")
 
     # Discover/Load the test suite
     if testing:
@@ -78,9 +84,9 @@ def _main(argv, testing):
     return int(not result.wasSuccessful())
 
 
-def main(argv=None, testing=False):
+def main(argv: Sequence[str] | None = None, testing: bool = False) -> int:
     # create the temp dir only once (i.e., not while in the recursed call)
-    if os.environ.get("TMPDIR") is None:  # pragma: nocover
+    if not os.environ.get("TMPDIR"):  # pragma: nocover
         try:
             with tempfile.TemporaryDirectory() as temp_dir_for_tests:
                 try:
@@ -93,9 +99,10 @@ def main(argv=None, testing=False):
         except OSError as os_error:
             if os_error.errno == 39:
                 # "Directory not empty" when trying to delete the temp dir can just be a warning
-                print("warning: {}".format(os_error.strerror))
+                print(f"warning: {os_error.strerror}")
+                return 0
             else:
-                raise (os_error)
+                raise os_error
     else:
         return _main(argv, testing)
 

@@ -1,14 +1,7 @@
-from __future__ import unicode_literals
 from io import StringIO
 import platform
-import sys
 import unittest
-
-
-try:
-    from unittest.mock import MagicMock, patch
-except:
-    from mock import MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from green.output import Colors, GreenStream, debug
 import green.output
@@ -106,11 +99,7 @@ class TestGreenStream(unittest.TestCase):
         s = StringIO()
         gs = GreenStream(s)
         msg = "some string"
-        if sys.version_info[0] == 3:  # pragma: no cover
-            bad_str = bytes(msg, "utf-8")
-        else:  # pragma: no cover
-            bad_str = str(msg)
-        gs.write(bad_str)
+        gs.write(bytes(msg, "utf-8"))
         self.assertEqual(s.getvalue(), msg)
 
     def testDisableWindowsTrue(self):

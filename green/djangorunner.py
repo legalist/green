@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 """
 To try running Django tests using green you can run:
 
@@ -10,9 +8,13 @@ To make the change permanent for your project, in settings.py add:
     TEST_RUNNER="green.djangorunner.DjangoRunner"
 """
 
-from argparse import Namespace
+from __future__ import annotations
+
+from argparse import ArgumentParser, Namespace
+import pathlib
 import os
 import sys
+from typing import Any, Final, Sequence
 
 from green.config import mergeConfig
 from green.loader import GreenTestLoader
@@ -22,12 +24,12 @@ from green.suite import GreenTestSuite
 
 # If we're not being run from an actual django project, set up django config
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "green.djangorunner")
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-SECRET_KEY = ")9^_e(=cisybdt4m4+fs+_wb%d$!9mpcoy0um^alvx%gexj#jv"
-DEBUG = True
-TEMPLATE_DEBUG = True
-ALLOWED_HOSTS = []
-INSTALLED_APPS = (
+BASE_DIR = pathlib.Path(__file__).absolute().parent.parent
+SECRET_KEY: Final[str] = ")9^_e(=cisybdt4m4+fs+_wb%d$!9mpcoy0um^alvx%gexj#jv"
+DEBUG: bool = True
+TEMPLATE_DEBUG: bool = True
+ALLOWED_HOSTS: Sequence[str] = []
+INSTALLED_APPS: Final[Sequence[str]] = (
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -36,7 +38,7 @@ INSTALLED_APPS = (
     "django.contrib.staticfiles",
     "myapp",
 )
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE_CLASSES: Final[Sequence[str]] = (
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -45,24 +47,24 @@ MIDDLEWARE_CLASSES = (
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 )
-ROOT_URLCONF = "myproj.urls"
-WSGI_APPLICATION = "myproj.wsgi.application"
-DATABASES = {
+ROOT_URLCONF: Final[str] = "myproj.urls"
+WSGI_APPLICATION: Final[str] = "myproj.wsgi.application"
+DATABASES: Final[dict[str, dict[str, str]]] = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
+        "NAME": str(BASE_DIR / "db.sqlite3"),
     }
 }
-LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
-USE_I18N = True
-USE_L10N = True
-USE_TZ = True
-STATIC_URL = "/static/"
+LANGUAGE_CODE: Final[str] = "en-us"
+TIME_ZONE: Final[str] = "UTC"
+USE_I18N: bool = True
+USE_L10N: bool = True
+USE_TZ: bool = True
+STATIC_URL: Final[str] = "/static/"
 # End of django fake config stuff
 
 
-def django_missing():
+def django_missing() -> None:
     raise ImportError("No django module installed")
 
 
@@ -74,14 +76,13 @@ try:
     from django.test.runner import DiscoverRunner
 
     class DjangoRunner(DiscoverRunner):
-        def __init__(self, verbose=-1, **kwargs):
-
-            super(DjangoRunner, self).__init__(**kwargs)
+        def __init__(self, verbose: int = -1, **kwargs: Any):
+            super().__init__(**kwargs)
             self.verbose = verbose
             self.loader = GreenTestLoader()
 
         @classmethod
-        def add_arguments(cls, parser):
+        def add_arguments(cls, parser: ArgumentParser) -> None:
             parser.add_argument(
                 "--green-verbosity",
                 action="store",
@@ -92,9 +93,16 @@ try:
                     Green 'verbose' level for tests.  Value should be an integer
                     that green supports.  For example: --green-verbosity 3""",
             )
-            super(DjangoRunner, cls).add_arguments(parser)
+            super().add_arguments(parser)
 
-        def run_tests(self, test_labels, extra_tests=None, **kwargs):
+        # FIXME: extra_tests is not used, we should either use it or update the
+        #  documentation accordingly.
+        def run_tests(
+            self,
+            test_labels: list[str] | tuple[str, ...],
+            extra_tests: Any = None,
+            **kwargs: Any,
+        ):
             """
             Run the unit tests for all the test labels in the provided list.
 
@@ -111,7 +119,7 @@ try:
             django_db = self.setup_databases()
 
             # Green
-            if type(test_labels) == tuple:
+            if isinstance(test_labels, tuple):
                 test_labels = list(test_labels)
             else:
                 raise ValueError("test_labels should be a tuple of strings")
@@ -134,4 +142,4 @@ try:
             return self.suite_result(suite, result)
 
 except ImportError:  # pragma: no cover
-    DjangoRunner = django_missing
+    DjangoRunner = django_missing  # type: ignore

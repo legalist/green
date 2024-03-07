@@ -1,5 +1,5 @@
-from __future__ import unicode_literals
 import os
+import pathlib
 from os.path import dirname
 import platform
 import shutil
@@ -7,11 +7,7 @@ import sys
 import tempfile
 from textwrap import dedent
 import unittest
-
-try:
-    from unittest.mock import MagicMock, patch
-except:
-    from mock import MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from green import loader
 from green.loader import GreenTestLoader, flattenTestSuite
@@ -23,7 +19,7 @@ class TestToProtoTestList(unittest.TestCase):
         toProtoTestList() raises import errors normally
         """
         suite = MagicMock()
-        suite.__class__.__name__ = str("ModuleImportFailure")
+        suite.__class__.__name__ = "ModuleImportFailure"
         suite.__str__.return_value = "exception_method (other_stuff)"
         suite.exception_method.side_effect = AttributeError
         self.assertRaises(AttributeError, loader.toProtoTestList, (suite,))
@@ -33,7 +29,7 @@ class TestToProtoTestList(unittest.TestCase):
         toProtoTestList() does not raise errors when doing completions
         """
         suite = MagicMock()
-        suite.__class__.__name__ = str("ModuleImportFailure")
+        suite.__class__.__name__ = "ModuleImportFailure"
         suite.__str__.return_value = "exception_method other_stuff"
         suite.exception_method.side_effect = AttributeError
         self.assertEqual(loader.toProtoTestList(suite, doing_completions=True), [])
@@ -41,12 +37,12 @@ class TestToProtoTestList(unittest.TestCase):
 
 class TestToParallelTargets(unittest.TestCase):
     def setUp(self):
-        super(TestToParallelTargets, self).setUp()
+        super().setUp()
 
-        class FakeModule(object):
+        class FakeModule:
             pass
 
-        class FakeModule2(object):
+        class FakeModule2:
             pass
 
         self._fake_module_name = "my_test_module"
@@ -57,7 +53,7 @@ class TestToParallelTargets(unittest.TestCase):
     def tearDown(self):
         del sys.modules[self._fake_module_name]
         del sys.modules[self._fake_module_name2]
-        super(TestToParallelTargets, self).tearDown()
+        super().tearDown()
 
     def test_methods_with_no_constraints(self):
         """
@@ -85,7 +81,8 @@ class TestToParallelTargets(unittest.TestCase):
         NormalTestCase.__module__ = self._fake_module_name
         full_name = "my_test_module.NormalTestCase.runTest"
 
-        targets = loader.toParallelTargets(NormalTestCase(), [full_name])
+        # Pass full_name as a single string to validate that it is handled correctly.
+        targets = loader.toParallelTargets(NormalTestCase(), full_name)
         self.assertEqual(targets, [full_name])
 
     def test_filter_out_dot(self):
@@ -272,24 +269,24 @@ class TestCompletions(unittest.TestCase):
 
 
 class TestIsPackage(unittest.TestCase):
+
+    def setUp(self):
+        tmpdir = tempfile.mkdtemp()
+        self.tmp_path = pathlib.Path(tmpdir)
+        self.addCleanup(shutil.rmtree, tmpdir)
+
     def test_yes(self):
         """
         A package is identified.
         """
-        tmpdir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, tmpdir)
-        fh = open(os.path.join(tmpdir, "__init__.py"), "w")
-        fh.write("pass\n")
-        fh.close()
-        self.assertTrue(loader.isPackage(tmpdir))
+        (self.tmp_path / "__init__.py").write_text("pass\n", encoding="utf-8")
+        self.assertTrue(loader.isPackage(self.tmp_path))
 
     def test_no(self):
         """
         A non-package is identified
         """
-        tmpdir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, tmpdir)
-        self.assertFalse(loader.isPackage(tmpdir))
+        self.assertFalse(loader.isPackage(self.tmp_path))
 
 
 class TestDottedModule(unittest.TestCase):
@@ -360,8 +357,8 @@ class TestLoadTestsFromTestCase(unittest.TestCase):
         suite = self.loader.loadTestsFromTestCase(Normal)
         self.assertEqual(suite.countTestCases(), 2)
         self.assertEqual(
-            set([x._testMethodName for x in suite._tests]),
-            set(["test_method1", "test_method2"]),
+            {x._testMethodName for x in suite._tests},
+            {"test_method1", "test_method2"},
         )
 
     def test_isTestCaseDisabled(self):
@@ -513,7 +510,6 @@ class TestDiscover(unittest.TestCase):
 
 
 class TestLoadTargets(unittest.TestCase):
-
     # Setup
     @classmethod
     def setUpClass(cls):
@@ -994,7 +990,6 @@ class TestLoadTargets(unittest.TestCase):
 
 
 class TestFlattenTestSuite(unittest.TestCase):
-
     # Setup
     @classmethod
     def setUpClass(cls):

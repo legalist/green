@@ -1,8 +1,67 @@
 # Unreleased
 #### Date TBD
 
+# Version 4.0.1
+#### 15 Feb 2024
+
+Note that we are explicitly flagging Python 3.12.1 as incompatible due to a regression
+that was fixed in 3.12.2.
+If you are on 3.12.1, then `pip` will try to install green 4.0.0, but it will
+likely crash if you have skipped tests, so you will either need to upgrade to
+python 3.12.2, or newer, or rollback to python 3.12.0.
+
+- Cleaned-up existing code to more modern python 3 style, including
+  comprehensive type annotation.
+- Simplify green's dev testing setup.
+- Explicitly flag 3.12.1 as incompatible due to https://github.com/python/cpython/issues/113267. 
+ Tracked in #277.
+- Publish new releases to PyPI using GitHub Actions.
+
+# Version 4.0.0
+#### 16 Jan 2024
+
+The biggest change in this release is the addition of support for new Python versions up through 3.12, and the dropping of support for Python < 3.8, including Python 2 entirely.
+
+There is a breaking in change in Python 3.12.1 which causes Green to break on skipped tests.
+The workaround is to use Python 3.12.0 or to comment out unittests that use `@unittest.skipIf(...)` annotation.
+We will release a fix for this in the next version of Green.
+
+- Fix an error and warnings that occur with Python 3.12. Contributed by [`@sodul`](https://github.com/sodul) in [#272], [#274], and [#275]
+- Add setup.cfg and pyproject.toml to support the setup.py deprecation in pip 23
+- Lift minimum supported Python version from 3.5 to 3.8
+- CI Improvements:
+   - Add 3.12 to the CI Action
+   - Add button to run CI checks manually
+   - Add 15 minutes timeout to CI checks
+   - Update CI to pip install green in developer mode
+- Add `mypy` linting & fix lint warnings
+- Use `pyupgrade` to modernize code
+- Use `black` to autoformat code
+- Add `pyproject.toml`
+- Move `setup.py` logic into `setup.cfg`
+- README cleanup
+- Fixes for newer versions of coverage
+- New maintainer: @sodul.
+
+
+[#272]: https://github.com/CleanCut/green/issues/272
+[#274]: https://github.com/CleanCut/green/pull/274
+[#275]: https://github.com/CleanCut/green/pull/275
+
+# Version 3.5.0
+#### 12 Jan 2024
+
+This is the final version to support Python 3.6 and 3.7.
+
+- Drop Python 2 support.
+- Add Python 3.11 to the CI Action.
+- Add setup.cfg and pyproject.toml to support the setup.py deprecation in pip 23.
+- Minimum Python version supported is now 3.6.
+
 # Version 3.4.3
 #### 20 Sep 2022
+
+This is the final version to support Python 2.
 
 - If green creates a temp directory for tests, but is unable to clean it up, emit a warning instead of crashing. Some tests don't behave well in the temp directory. Resolves #264.
 

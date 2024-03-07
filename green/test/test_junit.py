@@ -1,9 +1,7 @@
-from __future__ import unicode_literals
-
-from green.config import default_args
+from green.config import get_default_args
 from green.output import GreenStream
 from green.junit import JUnitXML, JUnitDialect, Verdict
-from green.result import GreenTestResult, BaseTestResult, ProtoTest, proto_error
+from green.result import GreenTestResult, ProtoTest, proto_error
 
 from io import StringIO
 
@@ -11,7 +9,7 @@ from sys import exc_info
 
 from unittest import TestCase
 
-from xml.etree.ElementTree import fromstring as from_xml, tostring as to_xml
+from xml.etree.ElementTree import fromstring as from_xml
 
 
 def test(module, class_name, method_name):
@@ -25,7 +23,9 @@ def test(module, class_name, method_name):
 class JUnitXMLReportIsGenerated(TestCase):
     def setUp(self):
         self._destination = StringIO()
-        self._test_results = GreenTestResult(default_args, GreenStream(StringIO()))
+        self._test_results = GreenTestResult(
+            get_default_args(), GreenStream(StringIO())
+        )
         self._test_results.timeTaken = 4.06
         self._adapter = JUnitXML()
 
